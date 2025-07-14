@@ -79,7 +79,8 @@ object RVI extends AssumeHelper with spec.instset.IBaseInsts {
   )
   val other = AssumeHelper(
     // List(FENCE, ECALL, EBREAK)
-    List(ECALL, EBREAK) // FIXME: FENCE will occurs exception when verify
+    //List(ECALL, EBREAK) // FIXME: FENCE will occurs exception when verify
+    List(ECALL)
   )
 
   val partition = List(regImm, regReg, control, loadStore, other)

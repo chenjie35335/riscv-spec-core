@@ -3,7 +3,7 @@ package rvspeccore.checker
 import chisel3._
 import chisel3.util._
 import rvspeccore.core._
-import rvspeccore.core.spec.instset.csr.{CSR, CSRInfoSignal, EventSig}
+import rvspeccore.core.spec.instset.csr.{CSR, CSRInfoSignal, CSRInfos, EventSig}
 import rvspeccore.core.tool.TLBMemInfo
 import rvspeccore.core.tool.TLBSig
 
@@ -223,10 +223,10 @@ class WriteBack()(implicit XLEN: Int) extends Bundle {
   val r2Addr = UInt(5.W)
   val r1Data = UInt(XLEN.W)
   val r2Data = UInt(XLEN.W)
-
-  val csrAddr  = UInt(12.W)
-  val csrNdata = UInt(64.W)
-  val csrWr    = Bool()
+//  This is only for Zicsr, but it has no use on further priviliged verification
+//  val csrAddr  = UInt(12.W)
+//  val csrNdata = UInt(64.W)
+//  val csrWr    = Bool()
 }
 
 object WriteBack {
@@ -246,6 +246,8 @@ class CheckerWithWB(val checkMem: Boolean = true, enableReg: Boolean = true, che
     val instCommit = Input(InstCommit())
     val wb         = Input(WriteBack())
     val privilege  = Input(PrivilegedState())
+    val privilegeNext = Input(PrivilegedState())
+    val event      = Input(new EventSig())
     val mem        = if (checkMem) Some(Input(new MemIO)) else None
   })
 
@@ -300,7 +302,8 @@ class CheckerWithWB(val checkMem: Boolean = true, enableReg: Boolean = true, che
     specCore.io.mem.read.data := DontCare
   }
 
-  // assert in current clock
+  // assert in current clock.
+
   when(regDelay(io.instCommit.valid)) {
     if (checkNPC) {
       assert(regDelay(io.instCommit.npc(31, 0)) === regDelay(specCoreNpcs(31, 0)))
@@ -334,16 +337,32 @@ class CheckerWithWB(val checkMem: Boolean = true, enableReg: Boolean = true, che
       assert(regDelay(io.wb.r2Addr) === regDelay(specCore.io.specWb.rs2_addr))
     }
     // try to verify csr write and read
-    when(regDelay(specCoreCsrWr) || regDelay(io.wb.csrWr)) {
-      assert(regDelay(specCoreCsrWr) === regDelay(io.wb.csrWr))
-      assert(regDelay(specCoreCsrAddr) === regDelay(io.wb.csrAddr))
-      val specCoreCsrNdata = WireInit(0.U(64.W))
-      specCore.io.next.privilege.csr.table.foreach { case (CSRInfoSignal(info, nextCSR)) =>
-        when(io.wb.csrAddr === info.addr) {
-          specCoreCsrNdata := nextCSR
-        }
+//    when(regDelay(spwb.csrAddr))
+//      val specCoreCsrNdata = WireInit(0.U(64.W))ecCoreCsrWr) || regDelay(io.wb.csrWr)) {
+    ////      assert(regDelay(specCoreCsrWr) === regDelay(io.wb.csrWr))
+    ////      assert(regDelay(specCoreCsrAddr) === regDelay(io.
+//      specCore.io.next.privilege.csr.table.foreach { case (CSRInfoSignal(info, nextCSR)) =>
+//        when(io.wb.csrAddr === info.addr) {
+//          specCoreCsrNdata := nextCSR
+//        }
+//      }Zicsr
+//      assert(regDelay(specCoreCsrNdata) === regDelay(io.wb.csrNdata))
+//    }
+    //try to verify the value of CSR registers
+    specCore.io.next.privilege.csr.table.zip(io.privilegeNext.csr.table).map{
+      case (next, result) => {
+          assert(regDelay(result.signal) === regDelay(next.signal))
       }
-      assert(regDelay(specCoreCsrNdata) === regDelay(io.wb.csrNdata))
+    }
+    //try to verify the event of processor
+    when(regDelay(io.event.valid) || regDelay(specCore.io.event.valid)) {
+      assert(
+        regDelay(io.event.valid) === regDelay(specCore.io.event.valid)
+      ) // Make sure DUT and specCore currently occur the same exception
+      assert(regDelay(io.event.intrNO) === regDelay(specCore.io.event.intrNO))
+      assert(regDelay(io.event.cause) === regDelay(specCore.io.event.cause))
+      assert(regDelay(io.event.exceptionPC) === regDelay(specCore.io.event.exceptionPC))
+      assert(regDelay(io.event.exceptionInst) === regDelay(specCore.io.event.exceptionInst))
     }
   }
 }

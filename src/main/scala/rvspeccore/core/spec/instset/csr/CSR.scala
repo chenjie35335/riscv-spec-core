@@ -62,7 +62,7 @@ trait CSRInfos {
       // }
       // FIXME: 临时mpp只能为M状态 之后要时刻保持其值为能够支持的状态
       // 需要读Config来继续进行 当前三个模式都有 所以这一行要注释掉
-      val mstatusNew = Cat(mstatusOld.fs === "b11".U, mstatusOld.asUInt(XLEN - 2, 0))
+      val mstatusNew = Cat(mstatusOld.fs === "b11".U && mstatusOld.xs === "b11".U, mstatusOld.asUInt(XLEN - 2, 0))
       mstatusNew
     }
   )
@@ -102,7 +102,7 @@ trait CSRInfos {
 
   // MaskedRegMap(Sie, mie, sieMask, MaskedRegMap.NoSideEffect, sieMask),
   val sie        = CSRInfo("h104", rmask = XLEN => "h222".U(XLEN.W), wmask = XLEN => "h222".U(XLEN.W)) // TODO
-  val stvec      = CSRInfo("h105")                                                                     // TODO
+  val stvec      = CSRInfo("h105", wmask = XLEN => (~("h2".U)).asUInt)                                                                     // TODO
   val scounteren = CSRInfo("h106")                                                                     // TODO
   // - Supervisor Configuration
   // senvcfg
@@ -133,7 +133,7 @@ trait CSRInfos {
   val mvendorid = CSRInfo("hf11", wfn = None)
   val marchid   = CSRInfo("hf12", wfn = None)
   val mimpid    = CSRInfo("hf13", wfn = None)
-  val mhartid   = CSRInfo("hf14", wfn = None)
+  val     = CSRInfo("hf14", wfn = None)
   // mconfigptr
   // - Machine Information Registers
   val mstatus = CSRInfo("h300", wfn = mstatusUpdateSideEffect) // TODO
@@ -142,7 +142,7 @@ trait CSRInfos {
   val medeleg    = CSRInfo("h302", wmask = XLEN => "hbbff".U) // FIXME: NutShell: medeleg[11] is read-only zero
   val mideleg    = CSRInfo("h303", wmask = XLEN => "h222".U)  // FIXME: simple impl use nutshell write mask
   val mie        = CSRInfo("h304")                            // TODO
-  val mtvec      = CSRInfo("h305")                            // TODO
+  val mtvec      = CSRInfo("h305", wmask = XLEN => (~(0x2.U(XLEN.W))).asUInt)                        // TODO
   val mcounteren = CSRInfo("h306")                            // TODO
   val mstatush   = CSRInfo("h310")                            // TODO
   // mstatush
@@ -253,7 +253,7 @@ class CSR()(implicit XLEN: Int, config: RVConfig) extends Bundle with IgnoreSeqI
     */
   val table = {
     val table_M = List(
-      CSRInfoSignal(CSRInfos.misa, misa),
+      //CSRInfoSignal(CSRInfos.misa, misa),
       CSRInfoSignal(CSRInfos.mvendorid, mvendorid),
       CSRInfoSignal(CSRInfos.marchid, marchid),
       CSRInfoSignal(CSRInfos.mimpid, mimpid),
@@ -263,8 +263,8 @@ class CSR()(implicit XLEN: Int, config: RVConfig) extends Bundle with IgnoreSeqI
       CSRInfoSignal(CSRInfos.mscratch, mscratch),
       CSRInfoSignal(CSRInfos.mtvec, mtvec),
       CSRInfoSignal(CSRInfos.mcounteren, mcounteren),
-      CSRInfoSignal(CSRInfos.mip, mip),
-      CSRInfoSignal(CSRInfos.mie, mie),
+//      CSRInfoSignal(CSRInfos.mip, mip),
+//      CSRInfoSignal(CSRInfos.mie, mie),
       CSRInfoSignal(CSRInfos.mepc, mepc),
       CSRInfoSignal(CSRInfos.mcause, mcause),
       CSRInfoSignal(CSRInfos.mtval, mtval)
@@ -281,20 +281,20 @@ class CSR()(implicit XLEN: Int, config: RVConfig) extends Bundle with IgnoreSeqI
       CSRInfoSignal(CSRInfos.stvec, stvec),
       CSRInfoSignal(CSRInfos.sepc, sepc),
       CSRInfoSignal(CSRInfos.stval, stval),
-      CSRInfoSignal(CSRInfos.sstatus, mstatus),
-      CSRInfoSignal(CSRInfos.sie, mie),
-      CSRInfoSignal(CSRInfos.sip, mip),
+      //CSRInfoSignal(CSRInfos.sstatus, mstatus),
+      //CSRInfoSignal(CSRInfos.sie, mie),
+      //CSRInfoSignal(CSRInfos.sip, mip),
       CSRInfoSignal(CSRInfos.sscratch, sscratch),
       // Memory Protection
-      CSRInfoSignal(CSRInfos.satp, satp),
-      CSRInfoSignal(CSRInfos.pmpcfg0, pmpcfg0),
-      CSRInfoSignal(CSRInfos.pmpcfg1, pmpcfg1),
-      CSRInfoSignal(CSRInfos.pmpcfg2, pmpcfg2),
-      CSRInfoSignal(CSRInfos.pmpcfg3, pmpcfg3),
-      CSRInfoSignal(CSRInfos.pmpaddr0, pmpaddr0),
-      CSRInfoSignal(CSRInfos.pmpaddr1, pmpaddr1),
-      CSRInfoSignal(CSRInfos.pmpaddr2, pmpaddr2),
-      CSRInfoSignal(CSRInfos.pmpaddr3, pmpaddr3)
+      CSRInfoSignal(CSRInfos.satp, satp)//,
+      //CSRInfoSignal(CSRInfos.pmpcfg0, pmpcfg0),
+      //CSRInfoSignal(CSRInfos.pmpcfg1, pmpcfg1),
+      //CSRInfoSignal(CSRInfos.pmpcfg2, pmpcfg2),
+      //CSRInfoSignal(CSRInfos.pmpcfg3, pmpcfg3),
+      //CSRInfoSignal(CSRInfos.pmpaddr0, pmpaddr0),
+      //CSRInfoSignal(CSRInfos.pmpaddr1, pmpaddr1),
+      //CSRInfoSignal(CSRInfos.pmpaddr2, pmpaddr2),
+      //CSRInfoSignal(CSRInfos.pmpaddr3, pmpaddr3)
     )
 
     table_M ++

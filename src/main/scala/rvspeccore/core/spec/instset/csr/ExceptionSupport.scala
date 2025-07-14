@@ -188,7 +188,7 @@ trait ExceptionSupport extends BaseCore {
       mstatusNew.mpie                       := mstatusOld.mie
       mstatusNew.mie                        := false.B
       next.privilege.internal.privilegeMode := ModeM // 之前写的大bug
-      // FIXME: tva此处写法欠妥
+      // FIXME: tval此处写法欠妥
       next.privilege.csr.mtval   := 0.U // : For other traps, mtval is set to zero
       next.privilege.csr.mstatus := mstatusNew.asUInt
       // TODO: modify the exception case

@@ -3,7 +3,7 @@ package rvspeccore.checker
 import chisel3._
 import chisel3.util._
 import chisel3.util.experimental.BoringUtils
-import rvspeccore.core.{RVConfig, State, PrivilegedState}
+import rvspeccore.core.{Internal, PrivilegedState, RVConfig, State}
 import rvspeccore.core.spec.instset.csr.CSR
 import rvspeccore.core.spec.instset.csr.EventSig
 import rvspeccore.core.tool.TLBSig
@@ -11,12 +11,15 @@ import rvspeccore.core.tool.TLBSig
 abstract class ConnectHelper {}
 
 trait UniqueId {
-  val uniqueIdReg: String   = "ConnectCheckerResult_UniqueIdReg"
-  val uniqueIdMem: String   = "ConnectCheckerResult_UniqueIdMem"
-  val uniqueIdCSR: String   = "ConnectCheckerResult_UniqueIdCSR"
-  val uniqueIdEvent: String = "ConnectCheckerResult_UniqueIdEvent"
-  val uniqueIdDTLB: String  = "ConnectCheckerResult_UniqueIdDTLB"
-  val uniqueIdITLB: String  = "ConnectCheckerResult_UniqueIdITLB"
+  val uniqueIdReg: String   = "UniqueIdReg"
+  val uniqueIdMem: String   = "UniqueIdMem"
+  val uniqueIdCSR: String   = "UniqueIdCSR"
+  val uniqueIdEvent: String = "UniqueIdEvent"
+  val uniqueIdDTLB: String  = "UniqueIdDTLB"
+  val uniqueIdITLB: String  = "UniqueIdITLB"
+  val uniqueIdCSRNext: String = "UniqueIdCSRNext"
+  val uniqueIdPrivilegeMode: String = "UniqueIdPrivilegeMode"
+  val uniqueIdPrivilegeModeNext: String = "UniqueIdePrivilegeModeNext"
 }
 
 /** Connect RegFile to io.result.reg by BoringUtils
@@ -171,12 +174,39 @@ object ConnectCheckerWb extends ConnectHelper with UniqueId {
     csr
   }
 
+  def makeModeSource()(implicit XLEN: Int, config: RVConfig): UInt = {
+    val privilegeMode = Internal.wireInit().privilegeMode
+    BoringUtils.addSource(privilegeMode, uniqueIdPrivilegeMode)
+    privilegeMode
+  }
+
+  def makeModeNextSource()(implicit XLEN: Int, config: RVConfig): UInt = {
+    val privilegeMode = Internal.wireInit().privilegeMode
+    BoringUtils.addSource(privilegeMode, uniqueIdPrivilegeModeNext)
+    privilegeMode
+  }
+
+  def makeCSRNextSource()(implicit XLEN: Int, config: RVConfig): CSR = {
+    val csr = CSR.wireInit()
+    BoringUtils.addSource(csr, uniqueIdCSRNext)
+    csr
+  }
+
+  def makeEventSource()(implicit XLEN: Int, config: RVConfig): EventSig = {
+    val event = Wire(new EventSig())
+    event := DontCare
+    BoringUtils.addSource(event, uniqueIdEvent)
+    event
+  }
+
   def setChecker(
       checker: CheckerWithWB,
       memDelay: Int = 0
   )(implicit XLEN: Int, config: RVConfig) = {
     // init
     val privilege = PrivilegedState.wireInit()
+    val privilegeNext = PrivilegedState.wireInit()
+    checker.io.privilegeNext := privilegeNext
     checker.io.privilege := privilege
 
     // mem
@@ -206,10 +236,25 @@ object ConnectCheckerWb extends ConnectHelper with UniqueId {
     csr := DontCare
     BoringUtils.addSink(csr, uniqueIdCSR)
     checker.io.privilege.csr := csr
-//
-//    val event = Wire(new EventSig())
-//    event := DontCare
-//    BoringUtils.addSink(event, uniqueIdEvent)
-//    checker.io.event := event
+    // csrNext
+    val csrNext = Wire(CSR())
+    csrNext := DontCare
+    BoringUtils.addSink(csrNext, uniqueIdCSRNext)
+    checker.io.privilegeNext.csr := csrNext
+    // privilegeMode
+    val privilegeMode = Wire(UInt(2.W))
+    privilegeMode := Internal.wireInit().privilegeMode
+    BoringUtils.addSink(privilegeMode, uniqueIdPrivilegeMode)
+    checker.io.privilege.internal.privilegeMode := privilegeMode
+    // next privilegeMode
+    val privilegeModeNext = Wire(UInt(2.W))
+    privilegeModeNext := Internal.wireInit().privilegeMode
+    BoringUtils.addSink(privilegeMode, uniqueIdPrivilegeModeNext)
+    checker.io.privilegeNext.internal.privilegeMode := privilegeMode
+    // exception events
+    val event = Wire(new EventSig())
+    event := DontCare
+    BoringUtils.addSink(event, uniqueIdEvent)
+    checker.io.event := event
   }
 }

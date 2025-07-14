@@ -36,16 +36,23 @@ trait CSRSupport extends BaseCore with ExceptionSupport with CheckTool {
       }
 
       // special read
-      switch(addr) {
-        is(CSRInfos.mepc.addr) {
+      when(addr === CSRInfos.mepc.addr || addr === CSRInfos.sepc.addr) {
           // - 3.1.14 Machine Exception Program Counter (mepc)
           // : If an implementation allows IALIGN to be either 16 or 32 (by
           // : changing CSR misa, for example), then, whenever IALIGN=32, bit
           // : mepc[1] is masked on reads so that it appears to be 0.
           when(now.privilege.csr.IALIGN === 32.U(8.W)) {
-            rData := Cat(Fill(MXLEN - 2, 1.U(1.W)), 0.U(2.W)) & now.privilege.csr.mepc(MXLEN - 1, 0)
+            rData := Mux(addr === CSRInfos.mepc.addr,
+              Cat(Fill(MXLEN - 2, 1.U(1.W)), 0.U(2.W)) & now.privilege.csr.mepc(MXLEN - 1, 0),
+              Cat(Fill(MXLEN - 2, 1.U(1.W)), 0.U(2.W)) & now.privilege.csr.sepc(MXLEN - 1, 0)
+            )
+          }.elsewhen(now.privilege.csr.IALIGN === 16.U(8.W)) {
+            rData := Mux(
+              addr === CSRInfos.mepc.addr,
+              Cat(Fill(MXLEN - 1, 1.U(1.W)), 0.U(1.W)) & now.privilege.csr.mepc(MXLEN - 1, 0),
+              Cat(Fill(MXLEN - 1, 1.U(1.W)), 0.U(1.W)) & now.privilege.csr.sepc(MXLEN - 1, 0)
+            )
           }
-        }
       }
     }
 //    doCSRRead(64)
@@ -67,20 +74,20 @@ trait CSRSupport extends BaseCore with ExceptionSupport with CheckTool {
         when(addr === info.addr) {
           // printf("[Debug]Find ADDR, %x %x\n", (info.wfn != null).B, (info.wmask != UnwritableMask).B)
           if (info.wfn.isDefined && info.wmask(XLEN) != UnwritableMask) {
-            nextCSR := info.wfn.get(XLEN)((nowCSR & ~info.wmask(XLEN)) | (data & info.wmask(XLEN)))
-            updateNextCsrWrite(addr)
+            when(info.addr === CSRInfos.mepc.addr || info.addr === CSRInfos.sepc.addr) {
+              nextCSR := Cat((info.wfn.get(XLEN)((nowCSR & ~info.wmask(XLEN)) | (data & info.wmask(XLEN))))(XLEN - 1, 1), 0.U(1.W))
+            }.otherwise {
+              nextCSR := info.wfn.get(XLEN)((nowCSR & (~info.wmask(XLEN)).asUInt) | (data & info.wmask(XLEN)))
+            }
             // printf("[Debug]CSR_Write:(Addr: %x, nowCSR: %x, nextCSR: %x)\n", addr, nowCSR, nextCSR)
-          } else {
-            // if write, this will has exception
           }
         }
       }
     }.otherwise {
-      // all unimplemented CSR registers return 0
-      // printf("[Error]CSR_Write:Not have this reg...\n")
-      raiseException(MExceptionCode.illegalInstruction)
+        // all unimplemented CSR registers return 0
+        // printf("[Error]CSR_Write:Not have this reg...\n")
+        raiseException(MExceptionCode.illegalInstruction)
     }
-
     // special wirte
     // ...
   }

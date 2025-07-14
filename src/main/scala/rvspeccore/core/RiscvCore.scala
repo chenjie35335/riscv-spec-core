@@ -3,7 +3,7 @@ package rvspeccore.core
 import chisel3._
 import chisel3.util._
 import spec._
-import spec.instset.csr.{CSR, CSRInfoSignal, EventSig, SatpStruct}
+import spec.instset.csr.{CSR, CSRInfoSignal, CSRInfos, EventSig, SatpStruct}
 import rvspeccore.checker.ArbitraryRegFile
 
 abstract class BaseCore()(implicit val config: RVConfig) extends Module {
@@ -186,9 +186,9 @@ class RiscvTrans()(implicit config: RVConfig) extends BaseCore with RVInstSet {
     if (config.extensions.Zifencei) doRVZifencei
     if (config.extensions.B) doRVB
 
-    // End excute
+    // End excute and reg[0] is always zero
+    // the mepc(0) is always zero
     next.reg(0) := 0.U
-
     when(!global_data.setpc) {
       if (config.extensions.C) {
         // + 4.U for 32 bits width inst

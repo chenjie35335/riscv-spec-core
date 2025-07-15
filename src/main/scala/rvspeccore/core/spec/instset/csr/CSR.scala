@@ -133,7 +133,7 @@ trait CSRInfos {
   val mvendorid = CSRInfo("hf11", wfn = None)
   val marchid   = CSRInfo("hf12", wfn = None)
   val mimpid    = CSRInfo("hf13", wfn = None)
-  val     = CSRInfo("hf14", wfn = None)
+  val mhartid    = CSRInfo("hf14", wfn = None)
   // mconfigptr
   // - Machine Information Registers
   val mstatus = CSRInfo("h300", wfn = mstatusUpdateSideEffect) // TODO

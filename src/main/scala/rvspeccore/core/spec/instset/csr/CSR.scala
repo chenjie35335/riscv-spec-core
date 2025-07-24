@@ -67,6 +67,22 @@ trait CSRInfos {
     }
   )
 
+  val mstatusWMask = (~zeroExt(
+      GenMask(62, 36)       |
+      GenMask(35, 32)       |
+      GenMask(31, 23)       |
+      GenMask(16, 15)       |
+      GenMask(10, 9)        |
+      GenMask(6)            |
+      GenMask(2)
+    , 64)).asUInt
+  val mstatusRMask = (~zeroExt((
+      GenMask(62, 36) | // WPRI
+      GenMask(31, 23)       | // WPRI
+      GenMask(10, 9)        | // WPRI
+      GenMask(6)            | // WPRI
+      GenMask(2)              // WPRI
+    ), 64)).asUInt
   // Address Map
   // - User Trap Setup ???????????
   // User CSR has been delete in V20211203
@@ -136,7 +152,26 @@ trait CSRInfos {
   val mhartid    = CSRInfo("hf14", wfn = None)
   // mconfigptr
   // - Machine Information Registers
-  val mstatus = CSRInfo("h300", wfn = mstatusUpdateSideEffect) // TODO
+  val mstatus = CSRInfo(
+    "h300",
+    wmask = XLEN => (~zeroExt(
+      GenMask(62, 36)       |
+        GenMask(35, 32)       |
+        GenMask(31, 23)       |
+        GenMask(16, 15)       |
+        GenMask(10, 9)        |
+        GenMask(6)            |
+        GenMask(2)
+      , 64)).asUInt,
+    wfn = mstatusUpdateSideEffect,
+    rmask = XLEN => (~zeroExt((
+      GenMask(62, 36) | // WPRI
+        GenMask(31, 23)       | // WPRI
+        GenMask(10, 9)        | // WPRI
+        GenMask(6)            | // WPRI
+        GenMask(2)              // WPRI
+      ), 64)).asUInt
+  ) // TODO
   // val misa       = CSRInfo("h301", None, Fill(XLEN, 1.U(1.W)), null, 0.U(XLEN.W)) // UnwritableMask implement
   val misa       = CSRInfo("h301")
   val medeleg    = CSRInfo("h302", wmask = XLEN => "hbbff".U) // FIXME: NutShell: medeleg[11] is read-only zero
@@ -281,7 +316,7 @@ class CSR()(implicit XLEN: Int, config: RVConfig) extends Bundle with IgnoreSeqI
       CSRInfoSignal(CSRInfos.stvec, stvec),
       CSRInfoSignal(CSRInfos.sepc, sepc),
       CSRInfoSignal(CSRInfos.stval, stval),
-      //CSRInfoSignal(CSRInfos.sstatus, mstatus),
+      CSRInfoSignal(CSRInfos.sstatus, mstatus),
       //CSRInfoSignal(CSRInfos.sie, mie),
       //CSRInfoSignal(CSRInfos.sip, mip),
       CSRInfoSignal(CSRInfos.sscratch, sscratch),

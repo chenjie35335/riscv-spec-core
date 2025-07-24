@@ -97,4 +97,13 @@ object BitTool {
       .foldLeft((BigInt(0), 0))((x, y) => ((x._1 << y._2) + y._1, x._2 + y._2))
     a._1.U(a._2.W)
   }
+
+  def GenMask(high: Int, low: Int): UInt = {
+    require(high > low)
+    (VecInit(List.fill(high+1)(true.B)).asUInt >> low << low).asUInt()
+  }
+
+  def GenMask(pos: Int): UInt = {
+    (1.U << pos).asUInt()
+  }
 }

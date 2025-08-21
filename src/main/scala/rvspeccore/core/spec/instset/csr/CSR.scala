@@ -62,7 +62,7 @@ trait CSRInfos {
       // }
       // FIXME: 临时mpp只能为M状态 之后要时刻保持其值为能够支持的状态
       // 需要读Config来继续进行 当前三个模式都有 所以这一行要注释掉
-      val mstatusNew = Cat(mstatusOld.fs === "b11".U && mstatusOld.xs === "b11".U, mstatusOld.asUInt(XLEN - 2, 0))
+      val mstatusNew = Cat(mstatusOld.fs === "b11".U || mstatusOld.xs === "b11".U, mstatusOld.asUInt(XLEN - 2, 0))
       mstatusNew
     }
   )
@@ -110,10 +110,9 @@ trait CSRInfos {
   // MaskedRegMap(Sstatus, mstatus, sstatusWmask, mstatusUpdateSideEffect, sstatusRmask),
   val sstatus = CSRInfo(
     "h100",
-    None,
-    mstatusUpdateSideEffect,
-    (XLEN: Int) => "hc6122".U(XLEN.W) | "h8000000300018000".U,
-    (XLEN: Int) => "hc6122".U(XLEN.W)
+    wfn = mstatusUpdateSideEffect,
+    wmask = (XLEN: Int) => "hc6122".U(XLEN.W),
+    rmask = (XLEN: Int) => "hc6122".U(XLEN.W) | "h8000000300018000".U
   ) // TODO
 
   // MaskedRegMap(Sie, mie, sieMask, MaskedRegMap.NoSideEffect, sieMask),
@@ -155,7 +154,7 @@ trait CSRInfos {
   val mstatus = CSRInfo(
     "h300",
     wmask = XLEN => (~zeroExt(
-      GenMask(62, 36)       |
+        GenMask(62, 36)       |
         GenMask(35, 32)       |
         GenMask(31, 23)       |
         GenMask(16, 15)       |
@@ -165,7 +164,7 @@ trait CSRInfos {
       , 64)).asUInt,
     wfn = mstatusUpdateSideEffect,
     rmask = XLEN => (~zeroExt((
-      GenMask(62, 36) | // WPRI
+        GenMask(62, 36) | // WPRI
         GenMask(31, 23)       | // WPRI
         GenMask(10, 9)        | // WPRI
         GenMask(6)            | // WPRI

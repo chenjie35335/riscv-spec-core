@@ -105,6 +105,9 @@ trait CSRSupport extends BaseCore with ExceptionSupport with CheckTool {
       } else {
         mstatusNew.mpp := ModeM
       }
+      when(mstatusOld.mpp =/= ModeM) {
+        mstatusNew.mprv := 0.U
+      }
       next.privilege.csr.mstatus := mstatusNew.asUInt
       retTarget                  := next.privilege.csr.mepc(VAddrBits - 1, 0)
       // printf("nextpc1:%x\n",now.privilege.csr.mepc)
@@ -115,6 +118,7 @@ trait CSRSupport extends BaseCore with ExceptionSupport with CheckTool {
       raiseException(MExceptionCode.illegalInstruction)
     }
   }
+
   def Sret(): Unit = {
     val mstatusOld = WireInit(now.privilege.csr.mstatus.asTypeOf(new MstatusStruct))
     val mstatusNew = WireInit(now.privilege.csr.mstatus.asTypeOf(new MstatusStruct))
@@ -133,7 +137,9 @@ trait CSRSupport extends BaseCore with ExceptionSupport with CheckTool {
       next.privilege.internal.privilegeMode := Cat(0.U(1.W), mstatusOld.spp)
       mstatusNew.spie                       := true.B
       mstatusNew.spp                        := ModeU
-      mstatusNew.mprv                       := 0x0.U // Volume II P21 " If xPP != M, xRET also sets MPRV = 0 "
+      when(mstatusOld.spp =/= ModeM) {
+        mstatusNew.mprv := 0x0.U // Volume II P21 " If xPP != M, xRET also sets MPRV = 0 "
+      }
       next.privilege.csr.mstatus            := mstatusNew.asUInt
       retTarget                             := next.privilege.csr.sepc(VAddrBits - 1, 0)
       // printf("nextpc1:%x\n",now.privilege.csr.sepc)

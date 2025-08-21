@@ -175,15 +175,17 @@ object ConnectCheckerWb extends ConnectHelper with UniqueId {
   }
 
   def makeModeSource()(implicit XLEN: Int, config: RVConfig): UInt = {
-    val privilegeMode = Internal.wireInit().privilegeMode
+    val privilegeMode = Wire(UInt(2.W))//Internal.wireInit().privilegeMode
+    privilegeMode := DontCare//Internal.wireInit().privilegeMode
     BoringUtils.addSource(privilegeMode, uniqueIdPrivilegeMode)
     privilegeMode
   }
 
   def makeModeNextSource()(implicit XLEN: Int, config: RVConfig): UInt = {
-    val privilegeMode = Internal.wireInit().privilegeMode
-    BoringUtils.addSource(privilegeMode, uniqueIdPrivilegeModeNext)
-    privilegeMode
+    val privilegeModeNext = Wire(UInt(2.W)) //Internal.wireInit().privilegeMode
+    privilegeModeNext := DontCare//Internal.wireInit().privilegeMode
+    BoringUtils.addSource(privilegeModeNext, uniqueIdPrivilegeModeNext)
+    privilegeModeNext
   }
 
   def makeCSRNextSource()(implicit XLEN: Int, config: RVConfig): CSR = {
@@ -204,11 +206,6 @@ object ConnectCheckerWb extends ConnectHelper with UniqueId {
       memDelay: Int = 0
   )(implicit XLEN: Int, config: RVConfig) = {
     // init
-    val privilege = PrivilegedState.wireInit()
-    val privilegeNext = PrivilegedState.wireInit()
-    checker.io.privilegeNext := privilegeNext
-    checker.io.privilege := privilege
-
     // mem
     val mem = Wire(new MemSig)
     mem := DontCare
@@ -243,12 +240,12 @@ object ConnectCheckerWb extends ConnectHelper with UniqueId {
     checker.io.privilegeNext.csr := csrNext
     // privilegeMode
     val privilegeMode = Wire(UInt(2.W))
-    privilegeMode := Internal.wireInit().privilegeMode
+    privilegeMode := DontCare
     BoringUtils.addSink(privilegeMode, uniqueIdPrivilegeMode)
     checker.io.privilege.internal.privilegeMode := privilegeMode
     // next privilegeMode
     val privilegeModeNext = Wire(UInt(2.W))
-    privilegeModeNext := Internal.wireInit().privilegeMode
+    privilegeModeNext := DontCare
     BoringUtils.addSink(privilegeMode, uniqueIdPrivilegeModeNext)
     checker.io.privilegeNext.internal.privilegeMode := privilegeMode
     // exception events

@@ -354,6 +354,7 @@ class CheckerWithWB(val checkMem: Boolean = true, enableReg: Boolean = true, che
           assert(regDelay(result.signal) === regDelay(next.signal))
       }
     }
+    assert(specCore.io.next.privilege.internal.privilegeMode === io.privilegeNext.internal.privilegeMode)
     //try to verify the event of processor
     when(regDelay(io.event.valid) || regDelay(specCore.io.event.valid)) {
       assert(

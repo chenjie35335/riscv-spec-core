@@ -246,8 +246,8 @@ object ConnectCheckerWb extends ConnectHelper with UniqueId {
     // next privilegeMode
     val privilegeModeNext = Wire(UInt(2.W))
     privilegeModeNext := DontCare
-    BoringUtils.addSink(privilegeMode, uniqueIdPrivilegeModeNext)
-    checker.io.privilegeNext.internal.privilegeMode := privilegeMode
+    BoringUtils.addSink(privilegeModeNext, uniqueIdPrivilegeModeNext)
+    checker.io.privilegeNext.internal.privilegeMode := privilegeModeNext
     // exception events
     val event = Wire(new EventSig())
     event := DontCare
